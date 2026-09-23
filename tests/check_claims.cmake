@@ -1,9 +1,17 @@
 cmake_minimum_required(VERSION 3.20)
 file(MAKE_DIRECTORY "${LOG_DIR}")
-set(flags -std=c++23 -DHAS_STD_LIB=1 -DGREVIR_ARDUINO_HOST_MOCK -fsyntax-only)
+if(COMPILER_ID STREQUAL "MSVC")
+  set(flags /nologo /std:c++latest /Zc:__cplusplus /Zs /DHAS_STD_LIB=1 /DGREVIR_ARDUINO_HOST_MOCK)
+  set(include_flag /I)
+  set(define_flag /D)
+else()
+  set(flags -std=c++23 -DHAS_STD_LIB=1 -DGREVIR_ARDUINO_HOST_MOCK -fsyntax-only)
+  set(include_flag -I)
+  set(define_flag -D)
+endif()
 foreach(directory IN LISTS INCLUDE_DIRS)
   if(NOT directory STREQUAL "")
-    list(APPEND flags "-I${directory}")
+    list(APPEND flags "${include_flag}${directory}")
   endif()
 endforeach()
 
@@ -11,7 +19,7 @@ endforeach()
 # CASE 2: millis + PWM 5 (Timer0). CASE 3: exclusive Timer0 besides millis.
 # CASE 4: two modules share pin 13.
 foreach(case IN ITEMS 0 1 2 3 4)
-  execute_process(COMMAND "${CXX}" ${flags} "-DCASE_ID=${case}" "${CASE_SOURCE}"
+  execute_process(COMMAND "${CXX}" ${flags} "${define_flag}CASE_ID=${case}" "${CASE_SOURCE}"
     RESULT_VARIABLE result OUTPUT_VARIABLE output ERROR_VARIABLE errors)
   file(WRITE "${LOG_DIR}/case-${case}.log" "${output}${errors}")
   if(case LESS 2)
@@ -19,7 +27,7 @@ foreach(case IN ITEMS 0 1 2 3 4)
       message(FATAL_ERROR "Valid Arduino AVR claim case ${case} failed:\n${output}${errors}")
     endif()
   elseif(NOT result MATCHES "^[1-9][0-9]*$" OR
-      NOT errors MATCHES "static assertion failed[^\n]*Application has resource conflict")
+      NOT "${output}${errors}" MATCHES "(static assertion failed|static_assert failed)[^\n]*Application has resource conflict")
     message(FATAL_ERROR "Expected Arduino AVR claim conflict for case ${case}, got ${result}:\n${output}${errors}")
   endif()
 endforeach()

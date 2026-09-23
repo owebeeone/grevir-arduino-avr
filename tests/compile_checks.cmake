@@ -14,12 +14,13 @@ target_link_libraries(grevir_arduino_avr_compile PRIVATE grevir::arduino_avr)
 target_compile_definitions(grevir_arduino_avr_compile PRIVATE GREVIR_ARDUINO_HOST_MOCK)
 set_target_properties(grevir_arduino_avr_compile PROPERTIES CXX_EXTENSIONS OFF)
 
-if(NOT CMAKE_CXX_COMPILER_ID MATCHES "^(AppleClang|Clang|GNU)$")
-  message(FATAL_ERROR "Arduino AVR claim probes currently require a Clang/GNU driver")
+if(NOT CMAKE_CXX_COMPILER_ID MATCHES "^(AppleClang|Clang|GNU|MSVC)$")
+  message(FATAL_ERROR "Arduino AVR claim probes require a supported C++ compiler driver")
 endif()
 add_custom_target(grevir_arduino_avr_claim_checks ALL
   COMMAND "${CMAKE_COMMAND}"
     "-DCXX=${CMAKE_CXX_COMPILER}"
+      "-DCOMPILER_ID=${CMAKE_CXX_COMPILER_ID}"
     "-DINCLUDE_DIRS=$<TARGET_PROPERTY:grevir_arduino_avr_compile,INCLUDE_DIRECTORIES>"
     "-DCASE_SOURCE=${CMAKE_CURRENT_SOURCE_DIR}/claim_probe.cpp"
     "-DLOG_DIR=${CMAKE_CURRENT_BINARY_DIR}/claim-results"
