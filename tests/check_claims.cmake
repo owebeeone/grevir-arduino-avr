@@ -17,18 +17,25 @@ endforeach()
 
 # CASE 0: millis + LED 13. CASE 1: millis + PWM 9 (Timer1).
 # CASE 2: millis + PWM 5 (Timer0). CASE 3: exclusive Timer0 besides millis.
-# CASE 4: two modules share pin 13.
-foreach(case IN ITEMS 0 1 2 3 4)
-  execute_process(COMMAND "${CXX}" ${flags} "${define_flag}CASE_ID=${case}" "${CASE_SOURCE}"
-    RESULT_VARIABLE result OUTPUT_VARIABLE output ERROR_VARIABLE errors)
-  file(WRITE "${LOG_DIR}/case-${case}.log" "${output}${errors}")
-  if(case LESS 2)
-    if(NOT result STREQUAL "0")
-      message(FATAL_ERROR "Valid Arduino AVR claim case ${case} failed:\n${output}${errors}")
-    endif()
-  elseif(NOT result MATCHES "^[1-9][0-9]*$" OR
-      NOT "${output}${errors}" MATCHES "(static assertion failed|static_assert failed)[^\n]*Application has resource conflict")
-    message(FATAL_ERROR "Expected Arduino AVR claim conflict for case ${case}, got ${result}:\n${output}${errors}")
+# CASE 4: two modules share pin 13. CASE 5: board D9 aliases physical PB1.
+# CASE 6: board D8 and physical PB1 are independent.
+foreach(board IN ITEMS uno nano)
+  set(board_flag)
+  if(board STREQUAL "nano")
+    set(board_flag "${define_flag}ARDUINO_AVR_NANO=1")
   endif()
+  foreach(case IN ITEMS 0 1 2 3 4 5 6)
+    execute_process(COMMAND "${CXX}" ${flags} ${board_flag} "${define_flag}CASE_ID=${case}" "${CASE_SOURCE}"
+      RESULT_VARIABLE result OUTPUT_VARIABLE output ERROR_VARIABLE errors)
+    file(WRITE "${LOG_DIR}/${board}-case-${case}.log" "${output}${errors}")
+    if(case LESS 2 OR case EQUAL 6)
+    if(NOT result STREQUAL "0")
+      message(FATAL_ERROR "Valid Arduino AVR claim ${board} case ${case} failed:\n${output}${errors}")
+    endif()
+    elseif(NOT result MATCHES "^[1-9][0-9]*$" OR
+        NOT "${output}${errors}" MATCHES "(static assertion failed|static_assert failed)[^\n]*Application has resource conflict")
+      message(FATAL_ERROR "Expected Arduino AVR claim conflict for ${board} case ${case}, got ${result}:\n${output}${errors}")
+    endif()
+  endforeach()
 endforeach()
-message(STATUS "Arduino AVR claim probes: two valid applications and three expected conflicts passed")
+message(STATUS "Arduino AVR claim probes: three valid applications and four expected conflicts on Uno and Nano passed")

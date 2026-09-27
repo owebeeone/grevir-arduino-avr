@@ -8,3 +8,4 @@
 #include <grevir/arduino_avr/boards/nano_old_bootloader.hpp>
 #include <grevir/arduino_avr/timer_policy.hpp>
 #include <grevir/arduino_avr/selected_board.hpp>
+#include <grevir/arduino_avr/gpio_claims.hpp>
